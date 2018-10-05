@@ -33,12 +33,17 @@ public class AppRunner implements CommandLineRunner {
     @SneakyThrows(InterruptedException.class)
     public void run(String... args) {
         log.info("Application started");
-        StopWatch stopWatch = new StopWatch("aws");
-        runQuery(stopWatch, "SELECT * FROM my_athena_table LIMIT 30");
-        runQuery(stopWatch, "SELECT * FROM my_athena_table LIMIT 100");
-        runQuery(stopWatch, "SELECT * FROM my_athena_table WHERE region = 'Sub-Saharan Africa'");
-        runQuery(stopWatch, "SELECT order_id, order_date FROM my_athena_table");
-        runQuery(stopWatch, "SELECT * FROM my_athena_table");
+        StopWatch stopWatch = new StopWatch("Athena");
+        runQuery(stopWatch, "SELECT * FROM csv_athena_table LIMIT 30");
+        runQuery(stopWatch, "SELECT * FROM csv_athena_table LIMIT 100");
+        runQuery(stopWatch, "SELECT * FROM csv_athena_table WHERE region = 'Sub-Saharan Africa'");
+        runQuery(stopWatch, "SELECT order_id, order_date FROM csv_athena_table");
+        runQuery(stopWatch, "SELECT * FROM csv_athena_table");
+        runQuery(stopWatch, "SELECT * FROM parq_athena_table LIMIT 30");
+        runQuery(stopWatch, "SELECT * FROM para_athena_table LIMIT 100");
+        runQuery(stopWatch, "SELECT * FROM parq_athena_table WHERE region = 'Sub-Saharan Africa'");
+        runQuery(stopWatch, "SELECT order_id, order_date FROM parq_athena_table");
+        runQuery(stopWatch, "SELECT * FROM parq_athena_table");
         log.info(stopWatch.prettyPrint());
         log.info("Application finished");
     }
@@ -53,15 +58,15 @@ public class AppRunner implements CommandLineRunner {
         GetQueryExecutionRequest queryExecutionRequest = new GetQueryExecutionRequest()
                 .withQueryExecutionId(startQueryExecutionResult.getQueryExecutionId());
 
-        GetQueryExecutionResult getQueryExecutionResult;
+        GetQueryExecutionResult queryExecutionResult;
         boolean isQueryStillRunning = true;
         while (isQueryStillRunning) {
-            getQueryExecutionResult = amazonAthena.getQueryExecution(queryExecutionRequest);
-            String queryState = getQueryExecutionResult.getQueryExecution().getStatus().getState();
+            queryExecutionResult = amazonAthena.getQueryExecution(queryExecutionRequest);
+            String queryState = queryExecutionResult.getQueryExecution().getStatus().getState();
             switch (QueryExecutionState.fromValue(queryState)) {
                 case FAILED:
                     log.warn("Query Failed to run with Error Message: {}",
-                            getQueryExecutionResult.getQueryExecution().getStatus().getStateChangeReason());
+                            queryExecutionResult.getQueryExecution().getStatus().getStateChangeReason());
                     isQueryStillRunning = false;
                     break;
                 case CANCELLED:

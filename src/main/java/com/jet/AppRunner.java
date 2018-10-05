@@ -34,7 +34,7 @@ public class AppRunner implements CommandLineRunner {
         log.info("Application started");
         Metrics metrics = new Metrics();
         runQuery(metrics, "SELECT * FROM csv_athena_table LIMIT 100");
-        runQuery(metrics, "SELECT * FROM para_athena_table LIMIT 100");
+        runQuery(metrics, "SELECT * FROM parq_athena_table LIMIT 100");
         runQuery(metrics, "SELECT * FROM csv_athena_table WHERE region = 'Sub-Saharan Africa'");
         runQuery(metrics, "SELECT * FROM parq_athena_table WHERE region = 'Sub-Saharan Africa'");
         runQuery(metrics, "SELECT * FROM csv_athena_table WHERE region = 'Sub-Saharan Africa' AND item_type IN ('Fruits', 'Clothes')");

@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: My stack configuration
+
+Parameters:
+  Prefix:
+    Description: The name of the configuration
+    Type: String
+    Default: test
+
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Prefix}-ebsco-athena-poc"
+  MyGlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      DatabaseInput:
+        Name: my_athena_database
+        Description: "Glue beats tape"
+      CatalogId: !Ref AWS::AccountId
+  MyGlueTable:
+    Type: AWS::Glue::Table
+    Properties:
+      DatabaseName: !Ref MyGlueDatabase
+      CatalogId: !Ref AWS::AccountId
+      TableInput:
+        Name: my_athena_table
+        Owner: "hadoop"
+#        PartitionKeys:
+#        - Name: region
+#          Type: string
+        Parameters: { "classification": "csv", "EXTERNAL": "TRUE" }
+        TableType: EXTERNAL_TABLE
+        StorageDescriptor:
+          Location: !Sub "s3://${MyBucket}/data"
+          InputFormat: "org.apache.hadoop.mapred.TextInputFormat"
+          OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+          SerdeInfo:
+            Parameters: { "separatorChar": ",", "skip.header.line.count": "1", "serialization.format": "1"}
+            SerializationLibrary: "org.apache.hadoop.hive.serde2.OpenCSVSerde"
+          StoredAsSubDirectories: false
+          NumberOfBuckets: -1
+          Columns:
+          - Name: region
+            Type: string
+          - Name: country
+            Type: string
+          - Name: item_type
+            Type: string
+          - Name: sales_channel
+            Type: string
+          - Name: order_priority
+            Type: string
+          - Name: order_date
+            Type: string
+          - Name: order_id
+            Type: string
+          - Name: ship_date
+            Type: string
+          - Name: units_sold
+            Type: string
+          - Name: unit_price
+            Type: string
+          - Name: unit_cost
+            Type: string
+          - Name: total_revenue
+            Type: string
+          - Name: total_cost
+            Type: string
+          - Name: total_profit
+            Type: string
+#  AthenaNamedQuery:
+#    Type: AWS::Athena::NamedQuery
+#    Properties:
+#      Database: !Sub "${MyGlueDatabase}"
+#      Description: "A query that selects all aggregated data"
+#      Name: "MostExpensiveWorkflow"
+#      QueryString: !Sub >
+#        SELECT * FROM ${MyGlueTable} LIMIT 15

@@ -1,0 +1,30 @@
+# java
+*.class
+*.jar
+*.war
+
+# idea
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+*.ids
+
+# eclipse
+.metadata
+.settings/
+bin/
+.classpath
+.project
+
+# maven
+target/
+
+# mac os x
+.DS_Store
+
+# windows
+Thumbs.db
+Desktop.ini
+

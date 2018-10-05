@@ -28,3 +28,4 @@ target/
 Thumbs.db
 Desktop.ini
 
+venv/

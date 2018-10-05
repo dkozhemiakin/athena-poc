@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StopWatch;
 
 @Component
 @Slf4j
@@ -33,32 +32,31 @@ public class AppRunner implements CommandLineRunner {
     @SneakyThrows(InterruptedException.class)
     public void run(String... args) {
         log.info("Application started");
-        StopWatch stopWatch = new StopWatch("Athena");
-        runQuery(stopWatch, "SELECT * FROM csv_athena_table LIMIT 30");
-        runQuery(stopWatch, "SELECT * FROM csv_athena_table LIMIT 100");
-        runQuery(stopWatch, "SELECT * FROM csv_athena_table WHERE region = 'Sub-Saharan Africa'");
-        runQuery(stopWatch, "SELECT order_id, order_date FROM csv_athena_table");
-        runQuery(stopWatch, "SELECT * FROM csv_athena_table");
-        runQuery(stopWatch, "SELECT * FROM parq_athena_table LIMIT 30");
-        runQuery(stopWatch, "SELECT * FROM para_athena_table LIMIT 100");
-        runQuery(stopWatch, "SELECT * FROM parq_athena_table WHERE region = 'Sub-Saharan Africa'");
-        runQuery(stopWatch, "SELECT order_id, order_date FROM parq_athena_table");
-        runQuery(stopWatch, "SELECT * FROM parq_athena_table");
-        log.info(stopWatch.prettyPrint());
+        Metrics metrics = new Metrics();
+        runQuery(metrics, "SELECT * FROM csv_athena_table LIMIT 100");
+        runQuery(metrics, "SELECT * FROM para_athena_table LIMIT 100");
+        runQuery(metrics, "SELECT * FROM csv_athena_table WHERE region = 'Sub-Saharan Africa'");
+        runQuery(metrics, "SELECT * FROM parq_athena_table WHERE region = 'Sub-Saharan Africa'");
+        runQuery(metrics, "SELECT * FROM csv_athena_table WHERE region = 'Sub-Saharan Africa' AND item_type IN ('Fruits', 'Clothes')");
+        runQuery(metrics, "SELECT * FROM parq_athena_table WHERE region = 'Sub-Saharan Africa' AND item_type IN ('Fruits', 'Clothes')");
+        runQuery(metrics, "SELECT order_id, order_date FROM csv_athena_table");
+        runQuery(metrics, "SELECT order_id, order_date FROM parq_athena_table");
+        runQuery(metrics, "SELECT * FROM csv_athena_table");
+        runQuery(metrics, "SELECT * FROM parq_athena_table");
+        log.info(metrics.prettyPrint());
         log.info("Application finished");
     }
 
-    private void runQuery(StopWatch stopWatch, String query) throws InterruptedException {
+    private void runQuery(Metrics metrics, String query) throws InterruptedException {
         log.info("Running query '{}'", query);
         StartQueryExecutionRequest startQueryExecutionRequest = createRequest(query);
 
-        stopWatch.start(query);
         StartQueryExecutionResult startQueryExecutionResult = amazonAthena
                 .startQueryExecution(startQueryExecutionRequest);
         GetQueryExecutionRequest queryExecutionRequest = new GetQueryExecutionRequest()
                 .withQueryExecutionId(startQueryExecutionResult.getQueryExecutionId());
 
-        GetQueryExecutionResult queryExecutionResult;
+        GetQueryExecutionResult queryExecutionResult = null;
         boolean isQueryStillRunning = true;
         while (isQueryStillRunning) {
             queryExecutionResult = amazonAthena.getQueryExecution(queryExecutionRequest);
@@ -81,7 +79,9 @@ public class AppRunner implements CommandLineRunner {
             }
             log.info("Current Status is: {}", queryState);
         }
-        stopWatch.stop();
+        metrics.addMetric(query,
+                queryExecutionResult.getQueryExecution().getStatistics().getEngineExecutionTimeInMillis(),
+                queryExecutionResult.getQueryExecution().getStatistics().getDataScannedInBytes());
     }
 
     private StartQueryExecutionRequest createRequest(String query) {
